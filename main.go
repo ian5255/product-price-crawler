@@ -13,6 +13,15 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
+type Result struct {
+	Name  string `json:"name"`
+	Img   string `json:"img"`
+	Link  string `json:"link"`
+	Price string `json:"price"`
+}
+
+var _YahooResult = make([]*Result, 0)
+
 func main() {
 	c := colly.NewCollector() // 在colly中使用 Collector 這類物件 來做事情
 
@@ -26,11 +35,30 @@ func main() {
 
 	c.OnHTML(".BaseGridItem__grid___2wuJ7", func(e *colly.HTMLElement) {
 		// fmt.Println(e.Attr("Response")) // 抓此Tag中的name屬性 來找出此Tag，再印此Tag中的content屬性
-		fmt.Println(e.Text)
+		// fmt.Println(e.ChildText(".BaseGridItem__title___2HWui")) // 取出商品名稱
+		// fmt.Println(e.ChildAttr("a", "href"))                    // 取出商品連結
+		_img := strings.Split(e.ChildAttr(".SquareFence_wrap_3jTo2 > img.SquareImg_img_2gAcq", "srcset"), " ")
+		// fmt.Println(_img[0]) // 取出商品圖片
+
+		_price := e.ChildText(".BaseGridItem__itemInfo___3E5Bx > em")
+		if _price == "" {
+			_price = e.ChildText(".BaseGridItem__price___31jkj > em")
+		}
+		// fmt.Println(_price) // 取出商品售價
+		// fmt.Printf("===================================\n\n")
+		_YahooResult = append(_YahooResult, &Result{
+			Name:  e.ChildText(".BaseGridItem__title___2HWui"),
+			Img:   _img[0],
+			Link:  e.ChildAttr("a", "href"),
+			Price: _price,
+		})
 	})
 
 	c.Visit("https://tw.buy.yahoo.com/search/product?p=iphone14") // Visit 要放最後
-	// fmt.Println(u2s("\u8a02\u95b1\u65b9\u6848"))
+
+	for _, e := range _YahooResult {
+		fmt.Println(e.Name, "|", e.Img, "|", e.Link, "|", e.Price)
+	}
 }
 
 func u2s(form string) (to string, err error) {
